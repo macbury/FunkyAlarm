@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USB_DEVICE=/dev/tty0
+USB_DEVICE=/dev/ttyUSB0
 CITY=Cracow,PL
 
 TEMP_WEATHER_FILE=/tmp/weather.json
@@ -12,6 +12,10 @@ ARDUINO_COMMAND_DISK_USAGE='u'
 ARDUINO_COMMAND_TIME='d'
 ARDUINO_COMMAND_TORRENT='b'
 ARDUINO_COMMAND_TEMPERATURE='t'
+
+function configure_usb {
+  stty -F /dev/ttyUSB0 cs8 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtsct;
+}
 
 function download_weather {
   if test "`find $TEMP_WEATHER_FILE -mmin +30`" || [ ! -f $TEMP_WEATHER_FILE ]
@@ -53,7 +57,7 @@ function list_torrents {
       PERCENT_DONE = "0";
     fi
 
-    echo "Pushing torrent: $PERCENT_DONE% and ETA seconds: $ETA_SECONDS"
+    echo "Pushing torrent: $PERCENT_DONE % and ETA seconds: $ETA_SECONDS"
     push_arduino $ARDUINO_COMMAND_TORRENT;
     push_arduino $PERCENT_DONE;
     push_arduino $ETA_SECONDS;
@@ -70,6 +74,7 @@ function push_arduino {
   echo $1 > $USB_DEVICE;
 }
 
+configure_usb;
 push_arduino $ARDUINO_COMMAND_START;
 
 download_weather;

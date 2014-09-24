@@ -42,25 +42,21 @@ function list_torrents {
   TORRENTLIST=`transmission-remote --list | sed -e '1d;$d;s/^ *//' | cut -s -d " " -f1`
   for TORRENTID in $TORRENTLIST
   do
-    DOWNLOADING=`transmission-remote --torrent $TORRENTID --info | grep "State: Downloading"`
-    if [ "$DOWNLOADING" != "" ]
-    then
-      PERCENT_DONE=$( regexp "transmission-remote -t $TORRENTID -i" "Percent Done: [0-9]*.[0-9]*" "[0-9]{1,2}.[0-9]{0,2}" )
-      ETA_SECONDS=$( transmission-remote -t $TORRENTID -i | grep  "ETA: **" | grep -Po "[0-9]* seconds"  | grep -Po "[0-9]*" )
+    PERCENT_DONE=$( regexp "transmission-remote -t $TORRENTID -i" "Percent Done: [0-9]*.[0-9]*" "[0-9]{1,2}.[0-9]{0,2}" )
+    ETA_SECONDS=$( transmission-remote -t $TORRENTID -i | grep  "ETA: **" | grep -Po "[0-9]* seconds"  | grep -Po "[0-9]*" )
 
-      if [ -z "${ETA_SECONDS}" ]; then
-        ETA_SECONDS = "0";
-      fi
-
-      if [ -z "${PERCENT_DONE}" ]; then
-        PERCENT_DONE = "0";
-      fi
-
-      echo "Pushing torrent: $PERCENT_DONE% and ETA seconds: $ETA_SECONDS"
-      push_arduino $ARDUINO_COMMAND_TORRENT;
-      push_arduino $PERCENT_DONE;
-      push_arduino $ETA_SECONDS;
+    if [ -z "${ETA_SECONDS}" ]; then
+      ETA_SECONDS = "0";
     fi
+
+    if [ -z "${PERCENT_DONE}" ]; then
+      PERCENT_DONE = "0";
+    fi
+
+    echo "Pushing torrent: $PERCENT_DONE% and ETA seconds: $ETA_SECONDS"
+    push_arduino $ARDUINO_COMMAND_TORRENT;
+    push_arduino $PERCENT_DONE;
+    push_arduino $ETA_SECONDS;
   done;
 }
 

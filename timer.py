@@ -5,7 +5,6 @@ BITCOIN_CURRENCY = "PLN";
 import transmissionrpc;
 import serial, json, requests, os.path, time, commands, os, re;
 from datetime import datetime, timedelta;
-#arduino = serial.Serial(ARDUINO_USB, 9600)
 
 ARDUINO_START_SYNC                  = 0;
 ARDUINO_WEATHER                     = 2;
@@ -15,15 +14,17 @@ ARDUINO_DISK_USAGE                  = 5;
 ARDUINO_BITCOIN                     = 6;
 ARDUINO_END_SYNC                    = 1;
 
-#api.openweathermap.org/data/2.5/weather?q=Cracow,PL&units=metric
+arduino = serial.Serial(ARDUINO_USB, 9600)
+
 def upload(command, message=None):
   print "Uploading to arduino: "+ str(command)
+  arduino.write(command)
   if not message is None:
     if isinstance(message, list):
       for m in message:
-        print "message "+ str(m)
+        arduino.write(m)
     else:
-      print "message "+ str(message)
+      print arduino.write(message)
   pass
 
 def download_weather_file(cache_file):
@@ -62,7 +63,6 @@ def upload_transmission():
     try:
       seconds = torrent.eta.total_seconds()
     except Exception as e:
-      print e
       seconds = -1
     if seconds > 0:
       print "Getting info for: "+ torrent.name
@@ -109,12 +109,13 @@ def upload_disk_usage():
       available += int(result[2])
   upload(ARDUINO_DISK_USAGE, [used, available])
   pass
+
 upload(ARDUINO_START_SYNC);
 
 upload_bitcoin();
 upload_weather_info();
-upload_time();
 upload_transmission();
 upload_disk_usage();
+upload_time();
 
 upload(ARDUINO_END_SYNC);

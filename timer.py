@@ -1,14 +1,18 @@
-ARDUINO_USB = '/dev/tty.usbserial'
-CITY_NAME   = "Cracow,PL"
-
+ARDUINO_USB      = '/dev/tty.usbserial'
+CITY_NAME        = "Cracow,PL"
+BITCOIN_CURRENCY = "PLN";
+import transmissionrpc;
 import serial, json, requests, os.path, time;
 from datetime import datetime, timedelta;
 #arduino = serial.Serial(ARDUINO_USB, 9600)
 
-ARDUINO_START_SYNC = 0;
-ARDUINO_WEATHER    = 2;
-ARDUINO_TIME       = 3;
-ARDUINO_END_SYNC   = 1;
+ARDUINO_START_SYNC                  = 0;
+ARDUINO_WEATHER                     = 2;
+ARDUINO_TIME                        = 3;
+ARDUINO_TRANSMISSION                = 4;
+ARDUINO_DISK_USAGE                  = 5;
+ARDUINO_BITCOIN                     = 6;
+ARDUINO_END_SYNC                    = 1;
 
 #api.openweathermap.org/data/2.5/weather?q=Cracow,PL&units=metric
 def upload(command, message=None):
@@ -46,6 +50,32 @@ def get_weather():
 def upload_time():
   upload(ARDUINO_TIME, int(time.time()))
 
+def upload_transmission():
+  client           = transmissionrpc.Client(address='localhost')
+  running_torrents = 0
+  total_eta        = 0
+  total_progress   = 0.0
+  download_speed   = 0
+  upload_speed     = 0
+  for torrent in client.get_torrents():
+    try:
+      seconds = torrent.eta.total_seconds()
+    except Exception as e:
+      print e
+      seconds = -1
+    if seconds > 0:
+      print "Getting info for: "+ torrent.name
+      running_torrents += 1
+      total_progress   += torrent.progress
+      total_eta        += seconds;
+      download_speed   += torrent.rateDownload;
+      upload_speed     += torrent.rateUpload;
+    else:
+      print "Skipping:" + torrent.name
+
+  upload(ARDUINO_TRANSMISSION, [total_eta, running_torrents, total_progress/running_torrents, download_speed, upload_speed])
+  pass
+
 def upload_weather_info():
   current_weather = get_weather()
   if current_weather:
@@ -56,9 +86,18 @@ def upload_weather_info():
     print "No weather data found for location: "+CITY_NAME
   pass
 
+def upload_bitcoin():
+  resp = requests.get(url="https://blockchain.info/ticker")
+  data = json.loads(resp.text)
+  btc  = data[BITCOIN_CURRENCY]
+  if not btc is None:
+    upload(ARDUINO_BITCOIN, [btc["15m"], BITCOIN_CURRENCY])
+
 upload(ARDUINO_START_SYNC);
 
+upload_bitcoin();
 upload_weather_info();
 upload_time();
+upload_transmission();
 
 upload(ARDUINO_END_SYNC);

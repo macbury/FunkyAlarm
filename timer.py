@@ -1,8 +1,9 @@
 ARDUINO_USB      = '/dev/tty.usbserial'
 CITY_NAME        = "Cracow,PL"
 BITCOIN_CURRENCY = "PLN";
+
 import transmissionrpc;
-import serial, json, requests, os.path, time;
+import serial, json, requests, os.path, time, commands, os, re;
 from datetime import datetime, timedelta;
 #arduino = serial.Serial(ARDUINO_USB, 9600)
 
@@ -73,7 +74,12 @@ def upload_transmission():
     else:
       print "Skipping:" + torrent.name
 
-  upload(ARDUINO_TRANSMISSION, [total_eta, running_torrents, total_progress/running_torrents, download_speed, upload_speed])
+  if running_torrents > 0:
+    total_progress = total_progress/running_torrents
+  else:
+    total_progress = 0
+
+  upload(ARDUINO_TRANSMISSION, [total_eta, running_torrents, total_progress, download_speed, upload_speed])
   pass
 
 def upload_weather_info():
@@ -93,11 +99,22 @@ def upload_bitcoin():
   if not btc is None:
     upload(ARDUINO_BITCOIN, [btc["15m"], BITCOIN_CURRENCY])
 
+def upload_disk_usage():
+  used      = 0
+  available = 0
+  for line in os.popen("df").read().split("\n"):
+    result = re.findall('(\d+)', line)
+    if len(result) >= 3:
+      used      += int(result[1])
+      available += int(result[2])
+  upload(ARDUINO_DISK_USAGE, [used, available])
+  pass
 upload(ARDUINO_START_SYNC);
 
 upload_bitcoin();
 upload_weather_info();
 upload_time();
 upload_transmission();
+upload_disk_usage();
 
 upload(ARDUINO_END_SYNC);

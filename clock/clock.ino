@@ -1,3 +1,11 @@
+#include <SPI.h>
+#include <glcdfont.c>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9340.h>
+
+#define PIN_cs 10
+#define PIN_dc 9
+#define PIN_rst 8
 
 #define ARDUINO_START_SYNC 0
 #define ARDUINO_WEATHER 2
@@ -27,16 +35,18 @@ struct Disk {
 
 unsigned long current_time;
 
-Temperature temperature;
-Torrents    torrents;
-Disk        disk;
+Temperature      temperature;
+Torrents         torrents;
+Disk             disk;
+
+Adafruit_ILI9340 screen = Adafruit_ILI9340(PIN_cs, PIN_dc, PIN_rst);
 
 void render_not_synced() {
-
+  screen.fillScreen(ILI9340_WHITE);
 }
 
 void render_clock() {
-
+  screen.fillScreen(ILI9340_BLACK);
 }
 
 void read_disk_usage() {
@@ -134,6 +144,8 @@ void read_serial_sync() {
 void setup() {
   Serial.begin(9600);
   Serial.println(F("Initializing clock"));
+  screen.setRotation(0);
+
   reset_vars();
   render_not_synced();
 }
